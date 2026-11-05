@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./config/db');
 require('dotenv').config();
 
-// Importar Modelos para que Sequelize los registre
-const Producto = require('./models/Producto');
+// Importar los modelos (con sus relaciones) y las rutas
+const { sequelize } = require('./models');
+const rutas = require('./routes');
+const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 
@@ -14,56 +15,24 @@ app.use(cors());
 // Parsear el body de las peticiones a JSON
 app.use(express.json());
 
-// --- RUTAS BÁSICAS DE PRUEBA ---
+// --- RUTAS ---
 app.get('/', (req, res) => {
     res.send('¡API Backend funcionando exitosamente!');
 });
 
+// Todas las rutas del sistema de inventario cuelgan de /api
+app.use('/api', rutas);
+
+// Ruta no encontrada
+app.use((req, res) => {
+    res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
+});
+
+// Manejo central de errores (siempre al final)
+app.use(errorHandler);
+
 // --- SINCRONIZACIÓN Y ARRANQUE ---
 const PORT = process.env.PORT || 3006;
-
-// --- RUTAS CRUD PARA PRODUCTOS ---
-// 1. POST: Crear un nuevo producto (Hace funcionar el botón Guardar)
-app.post('/productos', async (req, res) => {
-try {
-const nuevoProducto = await Producto.create(req.body);
-res.json(nuevoProducto);
-} catch (error) {
-res.status(500).json({ error: error.message });
-}
-});
-// 2. GET: Obtener todos los productos (Hace funcionar la Lista deProductos)
-app.get('/productos', async (req, res) => {
-try {
-const productos = await Producto.findAll();
-res.json(productos);
-} catch (error) {
-res.status(500).json({ error: error.message });
-}
-});
-// 3. PUT: Actualizar un producto existente (Hace funcionar el botónEditar)
-app.put('/productos/:id', async (req, res) => {
-try {
-await Producto.update(req.body, {
-where: { id: req.params.id }
-});
-res.json({ message: 'Producto actualizado' });
-} catch (error) {
-res.status(500).json({ error: error.message });
-}
-});
-// 4. DELETE: Eliminar un producto (Hace funcionar el botón Eliminar)
-app.delete('/productos/:id', async (req, res) => {
-try {
-await Producto.destroy({
-where: { id: req.params.id }
-});
-res.json({ message: 'Producto eliminado' });
-} catch (error) {
-res.status(500).json({ error: error.message });
-}
-});
-
 
 // force: false evita que se borren los datos cada vez que se reinicia el servidor
 sequelize.sync({ force: false })
