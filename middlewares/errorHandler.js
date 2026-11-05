@@ -13,6 +13,13 @@ const errorHandler = (err, req, res, next) => {
     if (err.name === 'SequelizeForeignKeyConstraintError') {
         return res.status(409).json({ error: 'No se puede eliminar: el registro está siendo usado por otros datos' });
     }
+    // Errores de express.json(): cuerpo demasiado grande o JSON mal escrito
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'El cuerpo de la petición es demasiado grande (máx. 10 KB)' });
+    }
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'El JSON enviado no es válido' });
+    }
     // Errores propios (errorHttp) o desconocidos
     const status = err.status || 500;
     if (status === 500) console.error(err);

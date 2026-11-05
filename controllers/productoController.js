@@ -40,18 +40,14 @@ const crear = async (req, res) => {
     const { stock_inicial, usuario_id, ...datos } = req.body;
     datos.proveedor_id = datos.proveedor_id || null;
     await validarRelaciones(datos);
-
     const cantidadInicial = Number(stock_inicial) || 0;
-    if (cantidadInicial > 0 && !usuario_id) {
-        throw errorHttp(400, 'Indique qué usuario registra el stock inicial');
-    }
 
     const producto = await sequelize.transaction(async (t) => {
         const nuevo = await Producto.create({ ...datos, stock: 0 }, { transaction: t });
         if (cantidadInicial > 0) {
             await registrarMovimiento({
                 producto_id: nuevo.id,
-                usuario_id,
+                usuario_id: req.usuario.id, // quien inició sesión (viene del JWT)
                 tipo_movimiento: 'Entrada',
                 cantidad: cantidadInicial,
                 observaciones: 'Stock inicial al registrar el producto'

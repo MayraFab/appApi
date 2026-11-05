@@ -37,6 +37,9 @@ const actualizar = async (req, res) => {
 // PATCH /usuarios/:id/estado  (activar / desactivar en vez de borrar)
 const cambiarEstado = async (req, res) => {
     const usuario = await buscarOFallar(req.params.id);
+    if (usuario.id === req.usuario.id) {
+        throw errorHttp(400, 'No puede desactivar su propia cuenta');
+    }
     await usuario.update({ activo: !usuario.activo });
     res.json(usuario);
 };

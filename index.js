@@ -1,26 +1,34 @@
 const express = require('express');
-const cors = require('cors');
 require('dotenv').config();
 
-// Importar los modelos (con sus relaciones) y las rutas
+// Importar los modelos (con sus relaciones), las rutas y los middlewares
 const { sequelize } = require('./models');
 const rutas = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
+const { cabecerasSeguras, corsRestringido, limitadorGeneral } = require('./middlewares/seguridad');
+
+// Sin clave secreta no se pueden firmar tokens: el servidor no debe arrancar
+if (!process.env.JWT_SECRET) {
+    console.error('Falta JWT_SECRET en el archivo .env');
+    process.exit(1);
+}
 
 const app = express();
 
-// --- MIDDLEWARES ---
-// Habilitar CORS para permitir peticiones desde el frontend (React)
-app.use(cors());
-// Parsear el body de las peticiones a JSON
-app.use(express.json());
+// --- PROTECCIÓN CONTRA ATAQUES COMUNES ---
+app.use(cabecerasSeguras);              // 1. Helmet: XSS, clickjacking, cabeceras seguras
+app.use(corsRestringido);               // 2. CORS: solo el frontend autorizado
+app.use('/api', limitadorGeneral);      // 3. Rate limit: fuerza bruta y DoS
+
+// Parsear el body a JSON (ANTES de las rutas). Límite de 10 KB contra payloads gigantes
+app.use(express.json({ limit: '10kb' }));
 
 // --- RUTAS ---
 app.get('/', (req, res) => {
     res.send('¡API Backend funcionando exitosamente!');
 });
 
-// Todas las rutas del sistema de inventario cuelgan de /api
+// /api/auth es público; el resto de /api exige token (ver routes/index.js)
 app.use('/api', rutas);
 
 // Ruta no encontrada

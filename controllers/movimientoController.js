@@ -34,7 +34,9 @@ const obtener = async (req, res) => {
 // TRANSACCIÓN: inserta el movimiento y actualiza el stock del producto.
 // Si cualquiera de las dos operaciones falla, se hace ROLLBACK de ambas.
 const crear = async (req, res) => {
-    const movimiento = await sequelize.transaction((t) => registrarMovimiento(req.body, t));
+    // El usuario que registra es el de la sesión (JWT), no uno elegido en el formulario
+    const datos = { ...req.body, usuario_id: req.usuario.id };
+    const movimiento = await sequelize.transaction((t) => registrarMovimiento(datos, t));
     res.status(201).json(await buscarOFallar(movimiento.id));
 };
 

@@ -1,7 +1,15 @@
 // Agrupa todas las rutas de la API bajo el prefijo /api
 const { Router } = require('express');
+const { autenticar } = require('../middlewares/authMiddleware');
 
 const router = Router();
+
+// 1) Rutas PÚBLICAS: registro e inicio de sesión
+router.use('/auth', require('./auth'));
+
+// 2) A partir de aquí TODAS las rutas exigen un token JWT válido
+router.use(autenticar());
+
 router.use('/dashboard', require('./dashboard'));
 router.use('/categorias', require('./categorias'));
 router.use('/proveedores', require('./proveedores'));
